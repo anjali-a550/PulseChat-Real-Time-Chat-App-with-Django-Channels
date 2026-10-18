@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Log in · PulseChat{% endblock %}
+{% block body_class %}auth{% endblock %}
+{% block body %}
+<main class="auth-card">
+  <div class="brand"><span class="pulse-dot"></span> PulseChat</div>
+  <h1>Welcome back</h1>
+  <p class="muted">Log in to pick up the conversation.</p>
+  <form method="post" class="stack">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert">{{ form.non_field_errors|join:" " }}</div>{% endif %}
+    <label>Username {{ form.username }}</label>
+    <label>Password {{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button type="submit" class="btn primary">Log in</button>
+  </form>
+  <p class="muted small">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+</main>
+{% endblock %}

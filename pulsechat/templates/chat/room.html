@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if room %}{{ room_title }} · {% endif %}PulseChat{% endblock %}
+{% block body_class %}app{% endblock %}
+{% block body %}
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <div class="brand"><span class="pulse-dot"></span> PulseChat</div>
+      <button class="icon-btn mobile-only" id="close-sidebar" aria-label="Close menu">×</button>
+    </div>
+
+    <section>
+      <h2>Rooms</h2>
+      <ul class="nav-list">
+        {% for r in public_rooms %}
+          <li><a href="{% url 'chat:room' r.slug %}" class="{% if current_room and r.pk == current_room.pk %}active{% endif %}">
+            <span class="hash">#</span>{{ r.name }}
+            {% if r.unread %}<span class="badge">{{ r.unread }}</span>{% endif %}
+          </a></li>
+        {% empty %}<li class="muted small">No rooms yet.</li>{% endfor %}
+      </ul>
+      <details class="new-room">
+        <summary>+ New room</summary>
+        <form method="post" action="{% url 'chat:create_room' %}" class="stack">
+          {% csrf_token %}
+          {{ room_form.name }}
+          {{ room_form.description }}
+          <button class="btn primary small">Create</button>
+        </form>
+      </details>
+    </section>
+
+    <section>
+      <h2>Direct messages</h2>
+      <ul class="nav-list">
+        {% for dm in dms %}
+          <li><a href="{% url 'chat:room' dm.slug %}" class="{% if current_room and dm.pk == current_room.pk %}active{% endif %}">
+            <span class="avatar sm" data-name="{{ dm.label }}"></span>{{ dm.label }}
+            {% if dm.unread %}<span class="badge">{{ dm.unread }}</span>{% endif %}
+          </a></li>
+        {% empty %}<li class="muted small">Start one from People below.</li>{% endfor %}
+      </ul>
+    </section>
+
+    <section>
+      <h2>People</h2>
+      <ul class="nav-list people">
+        {% for person in people %}
+          <li><a href="{% url 'chat:start_dm' person.username %}" data-user="{{ person.username }}">
+            <span class="avatar sm" data-name="{{ person.username }}"></span>{{ person.username }}
+            <span class="presence-dot" title="Online in this room"></span>
+          </a></li>
+        {% empty %}<li class="muted small">Invite a friend to sign up.</li>{% endfor %}
+      </ul>
+    </section>
+
+    <div class="sidebar-foot">
+      <span class="avatar sm" data-name="{{ user.username }}"></span>
+      <span class="me">{{ user.username }}</span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link-btn">Log out</button></form>
+    </div>
+  </aside>
+
+  <main class="chat">
+    {% if messages %}<div class="toasts">{% for m in messages %}<div class="alert">{{ m }}</div>{% endfor %}</div>{% endif %}
+    {% if room %}
+      <header class="chat-head">
+        <button class="icon-btn mobile-only" id="open-sidebar" aria-label="Open menu">☰</button>
+        <div>
+          <h1>{% if not room.is_private %}<span class="hash">#</span>{% endif %}{{ room_title }}</h1>
+          <p class="muted small" id="room-meta">{% if room.description %}{{ room.description }} · {% endif %}<span id="online-count">connecting…</span></p>
+        </div>
+        <span class="status" id="conn-status" data-state="connecting">Connecting</span>
+      </header>
+
+      <section class="messages" id="messages" aria-live="polite">
+        {% if has_more %}<button class="btn ghost small load-more" id="load-more">Load older messages</button>{% endif %}
+        <div id="message-list"></div>
+        <div class="empty muted" id="empty-state" hidden>No messages yet. Say hello 👋</div>
+      </section>
+
+      <div class="typing muted small" id="typing" aria-live="polite"></div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <textarea id="input" rows="1" maxlength="2000" placeholder="Message {% if room.is_private %}{{ room_title }}{% else %}#{{ room.name }}{% endif %}" aria-label="Message"></textarea>
+        <button type="submit" class="btn primary" id="send">Send</button>
+      </form>
+      {{ history|json_script:"history-data" }}
+      {{ room.slug|json_script:"room-slug" }}
+      {{ user.username|json_script:"me" }}
+    {% else %}
+      <div class="empty-room">
+        <h1>No rooms yet</h1>
+        <p class="muted">Create the first one from the sidebar.</p>
+      </div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/ui.js' %}"></script>{% if room %}<script src="{% static 'js/chat.js' %}"></script>{% endif %}{% endblock %}
